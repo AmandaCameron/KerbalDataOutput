@@ -44,6 +44,8 @@
     <Compile Include="Server.cs" />
     <Compile Include="SimpleJSON.cs" />
     <Compile Include="VesselInfo.cs" />
+    <Compile Include="SystemInfo.cs" />
+    <Compile Include="Info.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

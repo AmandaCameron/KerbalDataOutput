@@ -3,7 +3,7 @@ using SimpleJSON;
 
 namespace KerbalDataOutput
 {
-	public class VesselInfo
+	public class VesselInfo : Info
 	{
 		private string mName;
 		private string mId;
@@ -13,7 +13,6 @@ namespace KerbalDataOutput
 		private int mMissionTime;
 		private Orbit mOrbit;
 
-			
 		public VesselInfo (Vessel v)
 		{
 			mName = v.GetName();
@@ -26,20 +25,26 @@ namespace KerbalDataOutput
 			mOrbit = v.GetOrbit();
 		}
 
+		public bool IsActive ()
+		{
+			return mActive;
+		}
+
+		public string GetID ()
+		{
+			return mId;
+		}
+
 		public JSONNode ToJson ()
 		{
 			var ret = new JSONClass ();
 
 			ret ["name"] = mName;
 			ret ["id"] = mId;
+			ret["type"] = mType;
 			ret ["mission-time"].AsInt = mMissionTime;
 
-			ret ["orbit"] = new JSONClass ();
-			ret ["orbit"] ["body"] = mOrbit.referenceBody.GetName ();
-			ret ["orbit"] ["apoapsis"].AsDouble = mOrbit.ApA;
-			ret ["orbit"] ["periapsis"].AsDouble = mOrbit.PeA;
-			ret ["orbit"] ["time-to-ap"].AsInt = (int)mOrbit.timeToAp;
-			ret ["orbit"] ["time-to-pe"].AsInt = (int)mOrbit.timeToPe;
+			ret ["orbit"] = JsonifyOrbit(mOrbit);
 
 			return ret;
 		}

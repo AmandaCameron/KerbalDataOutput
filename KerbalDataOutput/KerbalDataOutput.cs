@@ -9,22 +9,27 @@ namespace KerbalDataOutput
 	public class KerbalDataOutput : MonoBehaviour
 	{
 		private List<VesselInfo> mInfo;
+		private List<SystemInfo> mSystem;
 
 		private bool mPaused;
 		private float mWarpSpeed;
 
 		private Server mServer;
 
-		public void Start() {
-			mServer = new Server();
+		public void Start ()
+		{
+			mServer = new Server ();
 
 			// Vessels
-			mServer.Hook(HandleAllVessels);
-			mServer.Hook(HandleActiveVessel);
-			mServer.Hook(HandleSingleVessel);
+			mServer.Hook (HandleAllVessels);
+			mServer.Hook (HandleActiveVessel);
+			mServer.Hook (HandleSingleVessel);
 
 			// Simulation
-			mServer.Hook(HandleSim);
+			mServer.Hook (HandleSim);
+
+			// Bodies.
+			mServer.Hook (HandleAllBodies);
 		}
 
 		public void OnDestroy ()
@@ -100,6 +105,26 @@ namespace KerbalDataOutput
 
 		#endregion
 
+		#region Celestrial Bodies.
+
+		public JSONNode HandleAllBodies (string path)
+		{
+			if (path != "/bodies/all") {
+				return null;
+			}
+
+			var ret = new JSONArray ();
+
+			foreach (var s in mSystem) {
+				ret.Add (s.ToJson ());
+			}
+
+
+			return ret;
+		}
+
+		#endregion
+
 		public void Update ()
 		{
 			// Vessel information.
@@ -109,6 +134,15 @@ namespace KerbalDataOutput
 			if (FlightGlobals.Vessels != null) {
 				foreach (Vessel v in FlightGlobals.Vessels) {
 					mInfo.Add (new VesselInfo (v));
+				}
+			}
+
+			if (FlightGlobals.Bodies != null && mSystem == null) {
+				mSystem = new List<SystemInfo>();
+
+				// Get the system information.
+				foreach (var b in FlightGlobals.Bodies) {
+					mSystem.Add(new SystemInfo (b));
 				}
 			}
 
