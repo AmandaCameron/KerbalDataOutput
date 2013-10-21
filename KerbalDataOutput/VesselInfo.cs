@@ -17,10 +17,10 @@ namespace KerbalDataOutput
 		{
 			mName = v.GetName();
 			mActive = v.isActiveVessel;
-			mType = v.isEVA ? "EVA" : "Ship";
+			mType = v.vesselType.ToString();
 			mMissionTime = (int)v.missionTime;
 
-			mId = v.GetInstanceID().ToString("X");
+			mId = v.id.ToString();
 
 			mOrbit = v.GetOrbit();
 		}
@@ -41,7 +41,7 @@ namespace KerbalDataOutput
 
 			ret ["name"] = mName;
 			ret ["id"] = mId;
-			ret["type"] = mType;
+			ret ["type"] = mType;
 			ret ["mission-time"].AsInt = mMissionTime;
 
 			ret ["orbit"] = JsonifyOrbit(mOrbit);
