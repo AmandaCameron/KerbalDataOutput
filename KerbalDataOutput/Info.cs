@@ -10,13 +10,24 @@ namespace KerbalDataOutput
 	{
 		protected JSONClass JsonifyOrbit (Orbit o)
 		{
-			var ret = new JSONClass();
+			var ret = new JSONClass ();
 
-			ret ["orbit"] ["body"] = o.referenceBody.GetName ();
-			ret ["orbit"] ["apoapsis"].AsDouble = o.ApA;
-			ret ["orbit"] ["periapsis"].AsDouble = o.PeA;
-			ret ["orbit"] ["time-to-ap"].AsInt = (int)o.timeToAp;
-			ret ["orbit"] ["time-to-pe"].AsInt = (int)o.timeToPe;
+			ret ["body"] = o.referenceBody.GetName ();
+
+			if (!Double.IsNaN (o.ApA)) {
+				ret ["apoapsis"].AsDouble = o.ApA;
+			}
+
+			if (!Double.IsNaN (o.PeA)) {
+				ret ["periapsis"].AsDouble = o.PeA;
+			}
+
+			ret["time-to"] = new JSONClass();
+
+			ret["time-to"]["apoapsis"].AsInt = (int)o.timeToAp;
+			ret["time-to"]["periapsis"].AsInt = (int)o.timeToPe;
+			ret["time-to"]["transition-one"].AsInt = (int)o.timeToTransition1;
+			ret["time-to"]["transition-two"].AsInt = (int)o.timeToTransition2;
 
 			return ret;
 		}
