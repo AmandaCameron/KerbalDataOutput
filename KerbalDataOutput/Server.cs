@@ -144,7 +144,7 @@ namespace KerbalDataOutput
 			{
 				mStream.EndWrite (r);
 
-				var resp = Encoding.UTF8.GetBytes (mResponse.ToString ());
+				var resp = Encoding.UTF8.GetBytes (mResponse.ToString (""));
 
 				mStream.BeginWrite (resp, 0, resp.Length,
 				                   new AsyncCallback (OnWrittenBody), null);
