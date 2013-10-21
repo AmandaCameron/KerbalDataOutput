@@ -130,7 +130,6 @@ namespace KerbalDataOutput
 			// Vessel information.
 			mInfo = new List<VesselInfo>{};
 
-
 			if (FlightGlobals.Vessels != null) {
 				foreach (Vessel v in FlightGlobals.Vessels) {
 					mInfo.Add (new VesselInfo (v));
@@ -138,14 +137,14 @@ namespace KerbalDataOutput
 			}
 
 			if (FlightGlobals.Bodies != null && mSystem == null) {
-				mSystem = new List<SystemInfo>();
+				mSystem = new List<SystemInfo> ();
 
 				// Get the system information.
 				foreach (var b in FlightGlobals.Bodies) {
-					mSystem.Add(new SystemInfo (b));
+					mSystem.Add (new SystemInfo (b));
 				}
 			}
-
+			 
 			mPaused = FlightDriver.Pause;
 			mWarpSpeed = TimeWarp.CurrentRate;
 		}
