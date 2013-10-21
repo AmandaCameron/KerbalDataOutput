@@ -24,12 +24,16 @@ namespace KerbalDataOutput
 			mRadius = b.Radius;
 			mSOI = b.sphereOfInfluence;
 
-			mOrbit = b.GetOrbit();
+			if (b.GetName() != "Sun") {
+				mOrbit = b.GetOrbit ();
+			}
 
 			mChildren = new List<string> ();
 
-			foreach (var c in b.orbitingBodies) {
-				mChildren.Add (c.GetName ());
+			if (b.orbitingBodies != null) {
+				foreach (var c in b.orbitingBodies) {
+					mChildren.Add (c.GetName ());
+				}
 			}
 		}
 
