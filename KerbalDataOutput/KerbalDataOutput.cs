@@ -8,7 +8,7 @@ namespace KerbalDataOutput
 	[KSPAddon(KSPAddon.Startup.EveryScene, false)]
 	public class KerbalDataOutput : MonoBehaviour
 	{
-		private List<VesselInfo> mInfo;
+		private List<VesselInfo> mVessels;
 		private List<SystemInfo> mSystem;
 
 		private bool mPaused;
@@ -30,6 +30,7 @@ namespace KerbalDataOutput
 
 			// Bodies.
 			mServer.Hook (HandleAllBodies);
+			mServer.Hook (HandleSingleBody);
 		}
 
 		public void OnDestroy ()
@@ -46,7 +47,7 @@ namespace KerbalDataOutput
 			}
 
 			var res = new JSONArray ();
-			foreach (var v in mInfo) {
+			foreach (var v in mVessels) {
 				res.Add (v.ToJson ());
 			}
 
@@ -59,7 +60,7 @@ namespace KerbalDataOutput
 				return null;
 			}
 
-			foreach (var v in mInfo) {
+			foreach (var v in mVessels) {
 				if (v.IsActive ()) {
 					return v.ToJson ();
 				}
@@ -70,13 +71,13 @@ namespace KerbalDataOutput
 
 		private JSONNode HandleSingleVessel (string path)
 		{
-			if (!path.StartsWith ("/vessels/")) {
+			if (!path.StartsWith ("/vessels/by-id/")) {
 				return null;
 			}
 
-			var id = path.Substring (9);
+			var id = path.Substring (15);
 
-			foreach (var v in mInfo) {
+			foreach (var v in mVessels) {
 				if (v.GetID () == id) {
 					return v.ToJson ();
 				}
@@ -123,16 +124,33 @@ namespace KerbalDataOutput
 			return ret;
 		}
 
+		public JSONNode HandleSingleBody (string path)
+		{
+			if (!path.StartsWith ("/bodies/by-name/")) {
+				return null;
+			}
+
+			var name = path.Substring (16).ToLower();
+
+			foreach (var sys in mSystem) {
+				if (sys.GetName ().ToLower() == name) {
+					return sys.ToJson ();
+				}
+			}
+
+			return null;
+		}
+
 		#endregion
 
 		public void Update ()
 		{
 			// Vessel information.
-			mInfo = new List<VesselInfo>{};
+			mVessels = new List<VesselInfo>{};
 
 			if (FlightGlobals.Vessels != null) {
 				foreach (Vessel v in FlightGlobals.Vessels) {
-					mInfo.Add (new VesselInfo (v));
+					mVessels.Add (new VesselInfo (v));
 				}
 			}
 

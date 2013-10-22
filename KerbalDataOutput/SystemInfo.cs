@@ -37,6 +37,11 @@ namespace KerbalDataOutput
 			}
 		}
 
+		public string GetName ()
+		{
+			return mName;
+		}
+
 		public JSONNode ToJson ()
 		{
 			var ret = new JSONClass ();
