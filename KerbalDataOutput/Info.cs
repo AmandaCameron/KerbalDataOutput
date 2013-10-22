@@ -22,6 +22,8 @@ namespace KerbalDataOutput
 				ret ["periapsis"].AsDouble = o.PeA;
 			}
 
+			ret ["progress"].AsDouble = o.orbitPercent;
+
 			ret["time-to"] = new JSONClass();
 
 			ret["time-to"]["apoapsis"].AsInt = (int)o.timeToAp;
