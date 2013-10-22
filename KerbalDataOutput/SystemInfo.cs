@@ -50,9 +50,7 @@ namespace KerbalDataOutput
 			ret ["mass"].AsDouble = mMass;
 			ret ["radius"].AsDouble = mRadius;
 
-			if (!Double.IsInfinity (mSOI)) {
-				ret ["sphere-of-influence"].AsDouble = mSOI;
-			}
+			ret ["sphere-of-influence"].AsDouble = mSOI;
 
 			if (mOrbit != null) {
 				ret["orbit"] = JsonifyOrbit (mOrbit);

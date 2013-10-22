@@ -1029,6 +1029,10 @@ namespace SimpleJSON
             }
             set
             {
+				if(Double.IsInfinity(value) || Double.IsNaN(value)) {
+					return;
+				}
+
 				JSONData tmp = new JSONData(value);
 				Set(tmp);
             }

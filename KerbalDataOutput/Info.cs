@@ -14,13 +14,8 @@ namespace KerbalDataOutput
 
 			ret ["body"] = o.referenceBody.GetName ();
 
-			if (!Double.IsNaN (o.ApA)) {
-				ret ["apoapsis"].AsDouble = o.ApA;
-			}
-
-			if (!Double.IsNaN (o.PeA)) {
-				ret ["periapsis"].AsDouble = o.PeA;
-			}
+			ret ["apoapsis"].AsDouble = o.ApA;
+			ret ["periapsis"].AsDouble = o.PeA;
 
 			ret ["progress"].AsDouble = o.orbitPercent;
 
