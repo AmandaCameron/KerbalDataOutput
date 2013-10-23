@@ -20,17 +20,20 @@ namespace KerbalDataOutput
 		{
 			mServer = new Server ();
 
+			// Game Stuff.
+			mServer.Hook ("/version", HandleGame);
+
 			// Vessels
-			mServer.Hook (HandleAllVessels);
-			mServer.Hook (HandleActiveVessel);
-			mServer.Hook (HandleSingleVessel);
+			mServer.Hook ("/vessels/all", HandleAllVessels);
+			mServer.Hook ("/vessels/active", HandleActiveVessel);
+			mServer.Hook ("/vessels/by-id/", HandleSingleVessel);
 
 			// Simulation
-			mServer.Hook (HandleSim);
+			mServer.Hook ("/sim", HandleSim);
 
 			// Bodies.
-			mServer.Hook (HandleAllBodies);
-			mServer.Hook (HandleSingleBody);
+			mServer.Hook ("/bodies/all", HandleAllBodies);
+			mServer.Hook ("/bodies/by-name/", HandleSingleBody);
 		}
 
 		public void OnDestroy ()
@@ -38,107 +41,101 @@ namespace KerbalDataOutput
 			mServer.Stop ();
 		}
 
+		private void HandleGame (Server.Client cli)
+		{
+			var res = new JSONClass ();
+
+			res ["ksp-version"] = Versioning.GetVersionString ();
+
+			cli.Success (res);
+		}
+
 		#region Vessel Handlers.
 
-		private JSONNode HandleAllVessels (string path)
+		private void HandleAllVessels (Server.Client cli)
 		{
-			if (path != "/vessels/all") {
-				return null;
-			}
-
 			var res = new JSONArray ();
 			foreach (var v in mVessels) {
 				res.Add (v.ToJson ());
 			}
 
-			return res;
+			cli.Success(res);
+
+			return;
 		}
 
-		private JSONNode HandleActiveVessel (string path)
+		private void HandleActiveVessel (Server.Client cli)
 		{
-			if (path != "/vessels/active") {
-				return null;
-			}
-
 			foreach (var v in mVessels) {
 				if (v.IsActive ()) {
-					return v.ToJson ();
+					//return v.ToJson ();
+					cli.Success(v.ToJson());
+					return;
 				}
 			}
 
-			return null;
+			cli.Error ("No active vessel");
 		}
 
-		private JSONNode HandleSingleVessel (string path)
+		private void HandleSingleVessel (Server.Client cli)
 		{
-			if (!path.StartsWith ("/vessels/by-id/")) {
-				return null;
-			}
-
-			var id = path.Substring (15);
+			var id = cli.Path.Substring (15);
 
 			foreach (var v in mVessels) {
 				if (v.GetID () == id) {
-					return v.ToJson ();
+					//return v.ToJson ();
+					cli.Success(v.ToJson());
+					return;
 				}
 			}
 
-			return null;
+			cli.Error ("No vessel with ID " + id);
 		}
 
 		#endregion
 
 		#region Simulation Handlers.
 
-		public JSONNode HandleSim (string path)
+		public void HandleSim (Server.Client cli)
 		{
-			if (path != "/sim") {
-				return null;
-			}
-
 			var data = new JSONClass ();
 
 			data["paused"].AsBool = mPaused;
 			data["warp-speed"].AsFloat = mWarpSpeed;
 
-			return data;
+			cli.Success(data);
+
+			//return data;
 		}
 
 		#endregion
 
 		#region Celestrial Bodies.
 
-		public JSONNode HandleAllBodies (string path)
+		public void HandleAllBodies (Server.Client cli)
 		{
-			if (path != "/bodies/all") {
-				return null;
-			}
-
 			var ret = new JSONArray ();
 
 			foreach (var s in mSystem) {
 				ret.Add (s.ToJson ());
 			}
 
-
-			return ret;
+			cli.Success(ret);
 		}
 
-		public JSONNode HandleSingleBody (string path)
+		public void HandleSingleBody (Server.Client cli)
 		{
-			if (!path.StartsWith ("/bodies/by-name/")) {
-				return null;
-			}
-
-			var name = path.Substring (16).ToLower();
+			var name = cli.Path.Substring (16).ToLower();
 
 			foreach (var sys in mSystem) {
 				if (sys.GetName ().ToLower() == name) {
-					return sys.ToJson ();
+					//return sys.ToJson ();
+					cli.Success(sys.ToJson ());
+					return;
 				}
 			}
 
-			return null;
+			cli.Error ("No such body " + cli.Path.Substring (16));
 		}
 
 		#endregion

@@ -7,31 +7,32 @@ using System.IO;
 
 namespace KerbalDataOutput
 {
-	class Server
+	public class Server
 	{
-		public delegate JSONNode Handler(string path);
+		public static int VERSION = 0;
+
+		public delegate void Handler (Client cli);
 
 		private TcpListener mSocket;
-		private List<Handler> mHandlers = new List<Handler>();
+		private Dictionary<string, Handler> mHandlers = new Dictionary<string, Handler> ();
 		// This is to keep the Client objects in memory. I don't know if
 		// it's nessary at all, but I also think it'd be helpful to have a list
 		// of pending clients.
-		private List<Client> mProcessing = new List<Client>();
+		private List<Client> mProcessing = new List<Client> ();
 
-
-		public Server()
+		public Server ()
 		{
-			mSocket = new TcpListener(8080);
+			mSocket = new TcpListener (8080);
 
 			
-			mSocket.Start();
+			mSocket.Start ();
 
-			mSocket.BeginAcceptTcpClient(new AsyncCallback(OnAccept), mSocket);
+			mSocket.BeginAcceptTcpClient (new AsyncCallback (OnAccept), mSocket);
 		}
 	
-		public void Hook (Handler new_handler)
+		public void Hook (string path, Handler new_handler)
 		{
-			mHandlers.Add (new_handler);
+			mHandlers.Add (path, new_handler);
 		}
 
 		public void Stop ()
@@ -46,85 +47,98 @@ namespace KerbalDataOutput
 			mProcessing.Remove (c);
 		}
 
-		public void Handle (Client cli, string req)
+		public void Handle (Client cli)
 		{
-			var r = new StringReader(req);
-
-			var head = r.ReadLine();
-			var path = head.Split (' ') [1];
-
 			foreach (var handler in mHandlers) {
-				var data = handler (path);
-
-				if (data != null) {
-					var resp = new JSONClass();
-
-					resp["version"].AsInt = 0;
-					resp["success"].AsBool = true;
-					resp["result"] = data;
-
-					cli.WriteResp (resp);
-
-					return;
+				if (cli.Path.StartsWith (handler.Key)) {
+					handler.Value(cli);
+					if(cli.Done) {
+						return;
+					}
 				}
 			}
 
-			var err = new JSONClass();
-
-			err["version"].AsInt = 0;
-			err["success"].AsBool = false;
-			err["error"] = "No handler for path given.";
-
-			cli.WriteResp(err);
+			cli.Error ("No handler for path \"" + cli.Path + "\"");
 		}
-
 
 		private void OnAccept (IAsyncResult r)
 		{
 			var sock = (TcpListener)r.AsyncState;
 			var client = sock.EndAcceptTcpClient (r);
 
-			sock.BeginAcceptTcpClient(new AsyncCallback(OnAccept), sock);
+			sock.BeginAcceptTcpClient (new AsyncCallback (OnAccept), sock);
 
-			mProcessing.Add(new Client(this, client));
+			mProcessing.Add (new Client (this, client));
 		}
 
-		public class Client {
-			private static byte[] HEADERS = Encoding.ASCII.GetBytes(
+		public class Client
+		{
+			private static byte[] HEADERS = Encoding.ASCII.GetBytes (
 				"HTTP/1.1 200 Success\r\n" +
-				"Content-Encoding: ascii\r\n" +
-				"Content-Type: text/json\r\n\r\n");
-	
-
+					"Content-Encoding: ascii\r\n" +
+					"Content-Type: text/json\r\n\r\n"
+				);
 			private Server mServer;
 			private TcpClient mSocket;
 			private NetworkStream mStream;
-
 			private static int BUFF_SIZE = 4096;
-
 			private byte[] mBuffer = new byte[BUFF_SIZE];
 			//private StringBuilder mBuilder = new StringBuilder();
 
 			private JSONNode mResponse;
 
-			public Client(Server s, TcpClient cli) {
+			// Request information
+			public string Method;
+			public string Path;
+			public bool Done;
+
+			public Client (Server s, TcpClient cli)
+			{
+				Done = false;
+
 				mServer = s;
 				mSocket = cli;
-				mStream = cli.GetStream();
+				mStream = cli.GetStream ();
 
-				mStream.BeginRead(mBuffer, 0, BUFF_SIZE,
-					      new AsyncCallback(OnRead), null);
+				mStream.BeginRead (mBuffer, 0, BUFF_SIZE,
+					      new AsyncCallback (OnRead), null);
 			}
 
 
-			// API.
+			// High-level API.
+
+			public void Success (JSONNode data)
+			{
+				JSONClass resp = new JSONClass ();
+
+				resp ["version"].AsInt = VERSION;
+				resp ["success"].AsBool = true;
+				resp ["result"] = data;
+
+				WriteResp (resp);
+			}
+
+			public void Error (string msg)
+			{
+				JSONClass resp = new JSONClass ();
+
+				resp ["version"].AsInt = VERSION;
+				resp ["success"].AsBool = false;
+				resp ["error"] = msg;
+
+				WriteResp(resp);
+			}
+
+			// Low Level API.
 
 			public void WriteResp (JSONNode data)
 			{
+				Done = true;
+
 				mResponse = data;
 
-				mStream.BeginWrite(HEADERS, 0, HEADERS.Length,
-					               new AsyncCallback(OnWrittenHeader), null); 
+				mStream.BeginWrite (HEADERS, 0, HEADERS.Length,
+					               new AsyncCallback (OnWrittenHeader), null); 
 			}
 
 			public void OnRead (IAsyncResult r)
@@ -134,7 +148,17 @@ namespace KerbalDataOutput
 				// TODO: Make this handle longer payloads than BUFF_SIZE
 
 				if (len > 0) {
-					mServer.Handle (this, Encoding.ASCII.GetString (mBuffer, 0, len));
+					//mServer.Handle (this, Encoding.ASCII.GetString (mBuffer, 0, len));
+					var br = new StringReader(Encoding.UTF8.GetString(mBuffer, 0, len));
+
+					var method = br.ReadLine();
+
+					Method = method.Split (' ')[0];
+					Path = method.Split (' ')[1];
+
+					// TODO: Read headers and shit.
+
+					mServer.Handle (this);
 				}
 			}
 
@@ -151,13 +175,14 @@ namespace KerbalDataOutput
 
 			}
 
-			public void OnWrittenBody(IAsyncResult r) {
+			public void OnWrittenBody (IAsyncResult r)
+			{
 				mStream.EndWrite (r);
 
 				mStream.Flush ();
 				mSocket.Close ();
 
-				mServer.ClientDone(this);
+				mServer.ClientDone (this);
 			}
 		}
 	}
