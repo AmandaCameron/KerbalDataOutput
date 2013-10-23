@@ -13,6 +13,7 @@ namespace KerbalDataOutput
 
 		private bool mPaused;
 		private float mWarpSpeed;
+		private double mScience;
 
 		private Server mServer;
 
@@ -46,6 +47,7 @@ namespace KerbalDataOutput
 			var res = new JSONClass ();
 
 			res ["ksp-version"] = Versioning.GetVersionString ();
+			res ["kdo-version"] = "0.0.1";
 
 			cli.Success (res);
 		}
@@ -102,6 +104,7 @@ namespace KerbalDataOutput
 
 			data["paused"].AsBool = mPaused;
 			data["warp-speed"].AsFloat = mWarpSpeed;
+			data["science"].AsDouble = mScience;
 
 			cli.Success(data);
 
@@ -159,7 +162,12 @@ namespace KerbalDataOutput
 					mSystem.Add (new SystemInfo (b));
 				}
 			}
-			 
+
+			if (ResearchAndDevelopment.Instance != null) {
+				mScience = ResearchAndDevelopment.Instance.Science;
+			} else {
+				mScience = -1;
+			}
 			mPaused = FlightDriver.Pause;
 			mWarpSpeed = TimeWarp.CurrentRate;
 		}
