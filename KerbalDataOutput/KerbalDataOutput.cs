@@ -10,6 +10,7 @@ namespace KerbalDataOutput
 	{
 		private List<VesselInfo> mVessels;
 		private List<SystemInfo> mSystem;
+		private List<NodeInfo>   mNodes;
 
 		private bool mPaused;
 		private float mWarpSpeed;
@@ -31,6 +32,7 @@ namespace KerbalDataOutput
 
 			// Simulation
 			mServer.Hook ("/sim", HandleSim);
+			mServer.Hook ("/nodes", HandleNodes);
 
 			// Bodies.
 			mServer.Hook ("/bodies/all", HandleAllBodies);
@@ -79,6 +81,8 @@ namespace KerbalDataOutput
 			cli.Error ("No active vessel");
 		}
 
+
+
 		private void HandleSingleVessel (Server.Client cli)
 		{
 			var id = cli.Path.Substring (15);
@@ -110,6 +114,17 @@ namespace KerbalDataOutput
 
 			//return data;
 		}
+
+		public void HandleNodes(Server.Client cli) {
+			var res = new JSONArray ();
+
+			foreach (var mn in mNodes) {
+				res.Add (mn.ToJSON ());
+			}
+
+			cli.Success (res);
+		}
+
 
 		#endregion
 
@@ -147,27 +162,42 @@ namespace KerbalDataOutput
 		{
 			// Vessel information.
 			mVessels = new List<VesselInfo>{};
+			mNodes = new List<NodeInfo> ();
 
-			if (FlightGlobals.Vessels != null) {
-				foreach (Vessel v in FlightGlobals.Vessels) {
+			if (FlightGlobals.Vessels != null)
+			{
+				foreach (Vessel v in FlightGlobals.Vessels)
+				{
 					mVessels.Add (new VesselInfo (v));
+
+					if (v.isActiveVessel) {
+						foreach (ManeuverNode mn in v.patchedConicSolver.maneuverNodes) {
+							mNodes.Add (new NodeInfo (mn));
+						}
+					}
 				}
 			}
 
-			if (FlightGlobals.Bodies != null && mSystem == null) {
+			if (FlightGlobals.Bodies != null && mSystem == null)
+			{
 				mSystem = new List<SystemInfo> ();
 
 				// Get the system information.
-				foreach (var b in FlightGlobals.Bodies) {
+				foreach (var b in FlightGlobals.Bodies)
+				{
 					mSystem.Add (new SystemInfo (b));
 				}
 			}
 
-			if (ResearchAndDevelopment.Instance != null) {
+			if (ResearchAndDevelopment.Instance != null)
+			{
 				mScience = ResearchAndDevelopment.Instance.Science;
-			} else {
+			}
+			else
+			{
 				mScience = -1;
 			}
+			
 			mPaused = FlightDriver.Pause;
 			mWarpSpeed = TimeWarp.CurrentRate;
 		}
