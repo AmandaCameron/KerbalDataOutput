@@ -1,5 +1,7 @@
 using System;
 using SimpleJSON;
+using KronalUtils;
+using UnityEngine;
 
 namespace KerbalDataOutput
 {
@@ -11,7 +13,8 @@ namespace KerbalDataOutput
 		private bool mActive;
 		private string mType;
 		private int mMissionTime;
-		private Orbit mOrbit;
+		private OrbitInfo mOrbit;
+		
 
 		public VesselInfo (Vessel v)
 		{
@@ -22,7 +25,9 @@ namespace KerbalDataOutput
 
 			mId = v.id.ToString();
 
-			mOrbit = v.GetOrbit();
+			// Flag is at v.rootPart.flagURL;
+		
+			mOrbit = new OrbitInfo(v.GetOrbit());
 		}
 
 		public bool IsActive ()
@@ -43,8 +48,9 @@ namespace KerbalDataOutput
 			ret ["id"] = mId;
 			ret ["type"] = mType;
 			ret ["mission-time"].AsInt = mMissionTime;
+			ret ["active"].AsBool = mActive;
 
-			ret ["orbit"] = JsonifyOrbit(mOrbit);
+			ret ["orbit"] = mOrbit.ToJson();
 
 			return ret;
 		}

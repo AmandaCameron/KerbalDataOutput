@@ -4,6 +4,7 @@ using System.Net.Sockets;
 using SimpleJSON;
 using System.Text;
 using System.IO;
+using UnityEngine;
 
 namespace KerbalDataOutput
 {
@@ -51,9 +52,13 @@ namespace KerbalDataOutput
 		{
 			foreach (var handler in mHandlers) {
 				if (cli.Path.StartsWith (handler.Key)) {
-					handler.Value(cli);
-					if(cli.Done) {
-						return;
+					try {
+						handler.Value(cli);
+						if(cli.Done) {
+							return;
+						}
+					} catch(Exception e) {
+						cli.Error ("Error Handling request: " + e.ToString());
 					}
 				}
 			}
@@ -73,11 +78,17 @@ namespace KerbalDataOutput
 
 		public class Client
 		{
-			private static byte[] HEADERS = Encoding.ASCII.GetBytes (
+			private static byte[] JSON_HEADERS = Encoding.ASCII.GetBytes (
 				"HTTP/1.1 200 Success\r\n" +
-					"Content-Encoding: ascii\r\n" +
-					"Content-Type: text/json\r\n\r\n"
+				"Content-Encoding: ascii\r\n" +
+				"Content-Type: text/json\r\n\r\n"
 				);
+
+			private static byte[] IMAGE_HEADERS = Encoding.ASCII.GetBytes (
+				"HTTP/1.1 200 Success\r\n" +
+				"Content-Type: image/png\r\n\r\n"
+			);
+
 			private Server mServer;
 			private TcpClient mSocket;
 			private NetworkStream mStream;
@@ -85,7 +96,7 @@ namespace KerbalDataOutput
 			private byte[] mBuffer = new byte[BUFF_SIZE];
 			//private StringBuilder mBuilder = new StringBuilder();
 
-			private JSONNode mResponse;
+			private byte[] mResponse;
 
 			// Request information
 			public string Method;
@@ -105,6 +116,15 @@ namespace KerbalDataOutput
 			}
 
 
+			public void Image(Texture2D image) {
+				Done = true;
+
+				mResponse = image.EncodeToPNG ();
+
+				mStream.BeginWrite (IMAGE_HEADERS, 0, IMAGE_HEADERS.Length,
+					new AsyncCallback (OnWrittenHeader), null); 
+			}
+
 			// High-level API.
 
 			public void Success (JSONNode data)
@@ -115,7 +135,7 @@ namespace KerbalDataOutput
 				resp ["success"].AsBool = true;
 				resp ["result"] = data;
 
-				WriteResp (resp);
+				WriteJsonResp (resp);
 			}
 
 			public void Error (string msg)
@@ -126,18 +146,18 @@ namespace KerbalDataOutput
 				resp ["success"].AsBool = false;
 				resp ["error"] = msg;
 
-				WriteResp(resp);
+				WriteJsonResp(resp);
 			}
 
 			// Low Level API.
 
-			public void WriteResp (JSONNode data)
+			public void WriteJsonResp (JSONNode data)
 			{
 				Done = true;
 
-				mResponse = data;
+				mResponse = Encoding.UTF8.GetBytes (data.ToString (""));
 
-				mStream.BeginWrite (HEADERS, 0, HEADERS.Length,
+				mStream.BeginWrite (JSON_HEADERS, 0, JSON_HEADERS.Length,
 					               new AsyncCallback (OnWrittenHeader), null); 
 			}
 
@@ -168,9 +188,7 @@ namespace KerbalDataOutput
 			{
 				mStream.EndWrite (r);
 
-				var resp = Encoding.UTF8.GetBytes (mResponse.ToString (""));
-
-				mStream.BeginWrite (resp, 0, resp.Length,
+				mStream.BeginWrite (mResponse, 0, mResponse.Length,
 				                   new AsyncCallback (OnWrittenBody), null);
 
 			}

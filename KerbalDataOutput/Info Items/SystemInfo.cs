@@ -12,7 +12,7 @@ namespace KerbalDataOutput
 		private double mRadius;
 		private double mSOI;
 
-		private Orbit mOrbit;
+		private OrbitInfo mOrbit;
 
 		private List<string> mChildren;
 
@@ -25,7 +25,7 @@ namespace KerbalDataOutput
 			mSOI = b.sphereOfInfluence;
 
 			if (b.GetName() != "Sun") {
-				mOrbit = b.GetOrbit ();
+				mOrbit = new OrbitInfo(b.GetOrbit ());
 			}
 
 			mChildren = new List<string> ();
@@ -53,7 +53,7 @@ namespace KerbalDataOutput
 			ret ["sphere-of-influence"].AsDouble = mSOI;
 
 			if (mOrbit != null) {
-				ret["orbit"] = JsonifyOrbit (mOrbit);
+				ret ["orbit"] = mOrbit.ToJson ();
 			}
 
 			ret ["children"] = new JSONArray ();

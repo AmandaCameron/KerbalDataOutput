@@ -5,21 +5,24 @@ namespace KerbalDataOutput
 {
 	public class NodeInfo : Info
 	{
-		private Orbit mOrbit;
+		private OrbitInfo mOrbit;
 		private double mDeltaV;
+		private double mTime;
 
 		public NodeInfo (ManeuverNode n)
 		{
-			mOrbit = n.patch;
+			mOrbit = new OrbitInfo (n.patch);
 			mDeltaV = n.DeltaV.magnitude;
+			mTime = n.UT;
 		}
 
-		public JSONNode ToJSON()
+		public JSONNode ToJson()
 		{
 			var ret = new JSONClass ();
 
 			ret ["delta-v"].AsDouble = mDeltaV;
-			ret ["orbit"] = JsonifyOrbit (mOrbit);
+			ret ["time"].AsDouble = mTime;
+			ret ["orbit"] = mOrbit.ToJson ();
 
 			return ret;
 		}

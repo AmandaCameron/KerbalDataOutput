@@ -1,1 +1,3 @@
 *.dll
+KerbalDataOutput/bin/
+KerbalDataOutput/obj/
